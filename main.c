@@ -23,12 +23,14 @@ int getEntryKey(int* kmer,int hdictsize,int k);
 int main(){
   	fingerprint* f_list,*f_temp; //lista di puntatori a fingerprint
   	char line[MAX_LINE_LENGTH], temp[10];//stringhe di appoggio
-  	FILE* fp = fopen("inputtest2.txt", "r"); //apertura file input
+  	FILE* fp = fopen("input.txt", "r"); //apertura file input
 	hash_dict* hdict=(hash_dict*)malloc(sizeof(hash_dict));//creazion hash_dict
+	hash_dict* hdicttemp=(hash_dict*)malloc(sizeof(hash_dict));//creazion hash_dict
 	int hdictsize=50000000; //parametro size per tutti gli hash dict
-	int min_shared_kmers = 4,min_region_length = 100,min_overlap_length = 600;
+	int min_shared_kmers = 4,min_region_length = 100,min_overlap_length = 600,max_kmer_occurrence = -1;
 	float min_region_kmer_coverage = 0.27,max_diff_region_percentage = 0.0,min_overlap_coverage = 0.70;
 	initHashDict(hdict,hdictsize); //inizializzazione di hdict
+	initHashDict(hdicttemp,hdictsize); //inizializzazione di hdicttemp
 
   	if (fp == NULL) { //controllo se è presente il file input
      		printf("no such file.");
@@ -68,17 +70,6 @@ int main(){
 	//for(int j1=0;j1<=i;j1++){printf("\n");viewList(f_list+j1);}
 
 	int *kmer,*tmp;//array di appoggio
-	
-	/*
-In Python, per ogni kmer che viene letto, viene salvata una tupla (kmer,read,start) all'interno di una lista. 
-Successivamente veniva contato il numero di volte in cui i kmer apparivano all'interno della lista. 
-Alla fine il dizionario delle occorrenze dei kmer veniva ottenuto andando ad iterare tale lista e per ogni elemento 
-si aggiornava lo stato del dizionario andando ad aggiungere alla entry con chiave "kmer" la tupla read,start. 
-
-In C invece viene direttamente popolato il dizionario associando ad ogni kmer la lista di coppie read,start e parametri 
-come il numero di volte in cui i kmer apparivano si possono ottenere dalla entry stessa (come ad esempio utilizzando entry->used).
-
-	*/
 
 	seconds=time(NULL);//viene resettato il tempo
 	for(int j1=0;j1<=i;j1++){//per goni read
@@ -93,7 +84,7 @@ come il numero di volte in cui i kmer apparivano si possono ottenere dalla entry
 				//printf("a%d - %d\n",j1,j2);
 				//printf("%d\n",key);
 				int key = getEntryKey(kmer,hdictsize,k);//viene computata la chiave per hash dict
-				add_in_hash_dict(&hdict->dicts_list[key],kmer,j1,j2,k); //viene salvata all'inetro del dizionario che ha collizioni con la chiave l'entry che ha 
+				add_in_hash_dict(&hdicttemp->dicts_list[key],kmer,j1,j2,k); //viene salvata all'inetro del dizionario che ha collizioni con la chiave l'entry che ha 
 										        //per chiave il kmer e valore la coppia (READ,START)
 				//printf("aa\n");
 				rscount2++;
@@ -105,11 +96,32 @@ come il numero di volte in cui i kmer apparivano si possono ottenere dalla entry
 		//f_list+=1;
 		//free(f_temp);
 	}
-	printf("Secondi creazione dizionario: %ld\n",time(NULL)-seconds);//diplsy tempo creazione dict_occ_kmers
 	//printf("%d\n",dict->used);
 	//viewHashDict(hdict,k);
 	//printf("\n");
 	//inizializzazione min_share_dict e matches_dict
+
+
+
+	for(int i=0;i<hdictsize;i++){//per ogni entry di dict_occ_kmers
+                dict_kmers *tempdict=hdicttemp->dicts_list[i];//salviamo un puntatore temporaneo all'i-esimo diizonario
+                if(tempdict){//se è stata allocata memoria
+                        for(int j=0;j<tempdict->used;j++){//per ogni entry del dizionario
+                                dict_entry_kmers *tempentry = tempdict->head[j];//viene salvato un puntatore alla j-esima entry del dizionario
+				if(tempentry->used > 1 && (max_kmer_occurrence == -1 ||  tempentry->used <= max_kmer_occurrence)){
+					for(int z1=0;z1<tempentry->used;z1++){ //per  ogni coppia (READ,STAR>
+						int read = tempentry->head[z1]->read;
+                               	         	int start = tempentry->head[z1]->start;
+						add_in_hash_dict(&hdict->dicts_list[i],tempentry->kmer,read,start,k);
+                                	}
+				}
+                        }
+                }
+        }
+	free(hdicttemp);
+        printf("Secondi creazione dizionario: %ld\n",time(NULL)-seconds);//diplsy tempo creazione di>
+
+
 
 	hash_mdict* hmdict=(hash_mdict*)malloc(sizeof(hash_mdict));
         initHashMDict(hmdict,hdictsize);
@@ -197,7 +209,7 @@ come il numero di volte in cui i kmer apparivano si possono ottenere dalla entry
 			}
 		}
 	}
-	printf("%d\n",cont);
+	//printf("%d\n",cont);
         printf("Secondi calcolo overlaps: %ld\n",time(NULL)-seconds);//viene mostrato quanto tempo ci è voluto a create matches_dict e min_sharing_dict
 
 	//viewHashODict(hodict);
