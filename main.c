@@ -70,7 +70,15 @@ int main(){
 	//for(int j1=0;j1<=i;j1++){printf("\n");viewList(f_list+j1);}
 
 	int *kmer,*tmp;//array di appoggio
+	/*
+	In Python, per ogni kmer che viene letto, viene salvata una tupla (kmer,read,start) all'interno di una lista. 
+	Successivamente veniva contato il numero di volte in cui i kmer apparivano all'interno della lista. 
+	Alla fine il dizionario delle occorrenze dei kmer veniva ottenuto andando ad iterare tale lista e per ogni elemento 
+	si aggiornava lo stato del dizionario andando ad aggiungere alla entry con chiave "kmer" la tupla read,start. 
 
+	In C invece viene direttamente popolato il dizionario associando ad ogni kmer la lista di coppie read,start e parametri 
+	come il numero di volte in cui i kmer apparivano si possono ottenere dalla entry stessa (come ad esempio utilizzando entry->used).
+	*/
 	seconds=time(NULL);//viene resettato il tempo
 	for(int j1=0;j1<=i;j1++){//per goni read
 		//fingerprint* f_list_temp = f_list=f_list+j1;
