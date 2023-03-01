@@ -3,7 +3,7 @@ typedef struct matches_dict_entry{
 
         int* reads;
         int* value;
-	int count;
+	int count; //numero di volte in cui appaiono le read, va a sostituire il dizionareo min_shared_dict
 
 }matches_dict_entry;
 
