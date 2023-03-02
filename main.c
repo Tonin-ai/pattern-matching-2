@@ -3,6 +3,8 @@
 #include <string.h>
 #include <malloc.h>
 #include <time.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include "menu.h"
 #include "fingerprint.h"
 #include "hash_dict.h"
@@ -20,10 +22,10 @@ int addList(int* tmp, int j2,int k);
 //unsigned short int getEntryKey(int* kmer,int seed,int k);
 int getEntryKey(int* kmer,int hdictsize,int k);
 
-int main(){
+int main(int argc, char **argv){
   	fingerprint* f_list,*f_temp; //lista di puntatori a fingerprint
   	char line[MAX_LINE_LENGTH], temp[10];//stringhe di appoggio
-  	FILE* fp = fopen("input.txt", "r"); //apertura file input
+  	FILE* fp = fopen("inputtest.txt", "r"); //apertura file input
 	hash_dict* hdict=(hash_dict*)malloc(sizeof(hash_dict));//creazion hash_dict
 	hash_dict* hdicttemp=(hash_dict*)malloc(sizeof(hash_dict));//creazion hash_dict
 	int hdictsize=50000000; //parametro size per tutti gli hash dict
@@ -70,30 +72,27 @@ int main(){
 	//for(int j1=0;j1<=i;j1++){printf("\n");viewList(f_list+j1);}
 
 	int *kmer,*tmp;//array di appoggio
-	/*
-	In Python, per ogni kmer che viene letto, viene salvata una tupla (kmer,read,start) all'interno di una lista. 
-	Successivamente veniva contato il numero di volte in cui i kmer apparivano all'interno della lista. 
-	Alla fine il dizionario delle occorrenze dei kmer veniva ottenuto andando ad iterare tale lista e per ogni elemento 
-	si aggiornava lo stato del dizionario andando ad aggiungere alla entry con chiave "kmer" la tupla read,start. 
 
-	In C invece viene direttamente popolato il dizionario associando ad ogni kmer la lista di coppie read,start e parametri 
-	come il numero di volte in cui i kmer apparivano si possono ottenere dalla entry stessa (come ad esempio utilizzando entry->used).
-	*/
 	seconds=time(NULL);//viene resettato il tempo
 	for(int j1=0;j1<=i;j1++){//per goni read
 		//fingerprint* f_list_temp = f_list=f_list+j1;
 		tmp=(f_list+j1)->list;
 		for(int j2=0;j2<=(f_list+j1)->used - k;j2++){//finché posso prendere almeno k elemti
 			int seed=addList(tmp,j2,k) - mintotlen; //viene verificata che la somma degli interi presenti all'iterno del kmer fa almeo mintotlen
+			//printf("[");for(int z=0;z<k;z++){printf("%d ",tmp[j2+z]);}printf("] %d\n",seed);
 			if(seed >= 0){
 				kmer=(int*)malloc(k*sizeof(int));
 				memcpy(kmer, tmp+j2, k*sizeof(int));
+				//printf("[");for(int z=0;z<k;z++){printf("%d ",kmer[z]);}printf("] %d\n",seed);
 				//for(int t=0;t<k;t++){printf("%d ",kmer[t]);}printf("\n");
 				//printf("a%d - %d\n",j1,j2);
 				//printf("%d\n",key);
 				int key = getEntryKey(kmer,hdictsize,k);//viene computata la chiave per hash dict
-				add_in_hash_dict(&hdicttemp->dicts_list[key],kmer,j1,j2,k); //viene salvata all'inetro del dizionario che ha collizioni con la chiave l'entry che ha 
-										        //per chiave il kmer e valore la coppia (READ,START)
+				//printf("[");for(int z=0;z<k;z++){printf("%d ",kmer[z]);}printf("] %d\n",key);
+				int esito = add_in_hash_dict(&hdicttemp->dicts_list[key],kmer,j1,j2,k); //viene salvata all'inetro del dizionario che ha collizioni con la chiave l'entry che ha 
+														        //per chiave il kmer e valore la coppia (READ,START)
+				//printf("[");for(int z=0;z<k;z++){printf("%d ",kmer[z]);}printf("] %d %d\n",key,esito);
+				//viewDict(hdicttemp->dicts_list[key],k);
 				//printf("aa\n");
 				rscount2++;
 			}
@@ -116,12 +115,13 @@ int main(){
                 if(tempdict){//se è stata allocata memoria
                         for(int j=0;j<tempdict->used;j++){//per ogni entry del dizionario
                                 dict_entry_kmers *tempentry = tempdict->head[j];//viene salvato un puntatore alla j-esima entry del dizionario
-				if(tempentry->used > 1 && (max_kmer_occurrence == -1 ||  tempentry->used <= max_kmer_occurrence)){
+				if(tempentry->used > 0 && (max_kmer_occurrence == -1 ||  tempentry->used <= max_kmer_occurrence)){
 					for(int z1=0;z1<tempentry->used;z1++){ //per  ogni coppia (READ,STAR>
 						int read = tempentry->head[z1]->read;
                                	         	int start = tempentry->head[z1]->start;
 						add_in_hash_dict(&hdict->dicts_list[i],tempentry->kmer,read,start,k);
                                 	}
+					//printf("[");for(int z=0;z<k;z++){printf("%d ",tempentry->kmer[z]);}printf("] %d\n",i);
 				}
                         }
                 }
@@ -220,8 +220,32 @@ int main(){
 	//printf("%d\n",cont);
         printf("Secondi calcolo overlaps: %ld\n",time(NULL)-seconds);//viene mostrato quanto tempo ci è voluto a create matches_dict e min_sharing_dict
 
-	//viewHashODict(hodict);
-	printf("\n");
+	if(argc == 2){
+
+		if (!strcmp("-l",argv[1])){
+			int out = open("output.log", O_RDWR|O_CREAT|O_APPEND, 0600);
+			if (-1 == out) { perror("opening cout.log"); return 255; }
+
+    			int save_out = dup(fileno(stdout));
+    			if (-1 == dup2(out, fileno(stdout))) { perror("cannot redirect stdout"); return 255; }
+
+			printf("\nFINGERPRINTS\n");
+	        	for(int j=0;j<=i;j++)viewList(f_list+j);
+        		printf("\n");
+        		printf("\nDIZIONARIO OCCORRENZE\n");
+        		viewHashDict(hdict,k);
+       			printf("\n");
+        		printf("\nDIZIONARIO MATCHES\n");
+        		viewHashMDict(hmdict);
+        		printf("\n");
+        		printf("\nDIZIONARIO OVERLAP\n");
+        		viewHashODict(hodict);
+        		printf("\n");
+
+
+		}
+
+	}
 
   return 0;
 }
