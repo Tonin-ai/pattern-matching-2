@@ -7,6 +7,7 @@
 typedef struct hash_dict{
 
         dict_kmers** dicts_list;
+        int size;
 
 } hash_dict;
 
