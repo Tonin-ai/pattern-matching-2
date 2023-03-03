@@ -25,10 +25,10 @@ int getEntryKey(int* kmer,int hdictsize,int k);
 int main(int argc, char **argv){
   	fingerprint* f_list,*f_temp; //lista di puntatori a fingerprint
   	char line[MAX_LINE_LENGTH], temp[10];//stringhe di appoggio
-  	FILE* fp = fopen("inputtest.txt", "r"); //apertura file input
+  	FILE* fp = fopen("input.txt", "r"); //apertura file input
 	hash_dict* hdict=(hash_dict*)malloc(sizeof(hash_dict));//creazion hash_dict
 	hash_dict* hdicttemp=(hash_dict*)malloc(sizeof(hash_dict));//creazion hash_dict
-	int hdictsize=50000000; //parametro size per tutti gli hash dict
+	int hdictsize=100000000; //parametro size per tutti gli hash dict
 	int min_shared_kmers = 4,min_region_length = 100,min_overlap_length = 600,max_kmer_occurrence = -1;
 	float min_region_kmer_coverage = 0.27,max_diff_region_percentage = 0.0,min_overlap_coverage = 0.70;
 	initHashDict(hdict,hdictsize); //inizializzazione di hdict
@@ -186,8 +186,8 @@ int main(int argc, char **argv){
 					int *list0=(f_list+tempentry->reads[0])->list,*list1=(f_list+tempentry->reads[1])->list;
 					up1 = addList(list0,0,start1);
 					up2 = addList(list1,0,start2);
-					l1 = addList(list0,start1,end1);
-					l2 = addList(list1,start2,end2);
+					l1 = addList(list0,start1,end1-start1);
+					l2 = addList(list1,start2,end2-start2);
 					read1_length = addList(list0,0,(f_list+tempentry->reads[0])->used);
 					read2_length = addList(list1,0,(f_list+tempentry->reads[1])->used);
 					int min_cov_number = min_region_kmer_coverage * min(l1,l2)/mintotlen;
@@ -229,15 +229,15 @@ int main(int argc, char **argv){
     			int save_out = dup(fileno(stdout));
     			if (-1 == dup2(out, fileno(stdout))) { perror("cannot redirect stdout"); return 255; }
 
-			printf("\nFINGERPRINTS\n");
-	        	for(int j=0;j<=i;j++)viewList(f_list+j);
-        		printf("\n");
-        		printf("\nDIZIONARIO OCCORRENZE\n");
-        		viewHashDict(hdict,k);
-       			printf("\n");
-        		printf("\nDIZIONARIO MATCHES\n");
-        		viewHashMDict(hmdict);
-        		printf("\n");
+			//printf("\nFINGERPRINTS\n");
+	        	//for(int j=0;j<=i;j++)viewList(f_list+j);
+        		//printf("\n");
+        		//printf("\nDIZIONARIO OCCORRENZE\n");
+        		//viewHashDict(hdict,k);
+       			//printf("\n");
+        		//printf("\nDIZIONARIO MATCHES\n");
+        		//viewHashMDict(hmdict);
+        		//printf("\n");
         		printf("\nDIZIONARIO OVERLAP\n");
         		viewHashODict(hodict);
         		printf("\n");
